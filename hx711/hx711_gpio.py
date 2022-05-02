@@ -51,22 +51,23 @@ class HX711_GPIO(HX711):
 
         super().__init__(gain, offset, scalar, tare)
 
-    def _gain_pulse(self, gain: int) -> None:
-        for _ in range(gain):
-            self._pin_clk.value = True
-            self._pin_clk.value = False
-
     def read_raw(self) -> int:
+        # Wait for dout pin to go low, indicating ready state
         while self._pin_data.value:
             time.sleep(0.01)
 
+        # Clock out 24 + (gain) pulses and read in on the falling edge
         raw_reading = 0
-        for _ in range(HX711.HX_DATA_BITS):
+        for _ in range(HX711.HX_DATA_BITS + self.gain):
+            # Clock out a pulse to increment the shift register
             self._pin_clk.value = True
             self._pin_clk.value = False
+
+            # Read in a bit at the falling edge, bit-shift the read in progress, and stack a new bit
             raw_reading = raw_reading << 1 | self._pin_data.value
 
-        self._gain_pulse(self.gain)
+        # Pop off our gain pulse bits before we handle the result
+        raw_reading = raw_reading >> self.gain
 
         # Handle two's compliment negative numbers
         if raw_reading > HX711.HX_MAX_VALUE:
