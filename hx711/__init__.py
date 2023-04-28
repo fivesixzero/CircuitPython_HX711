@@ -220,7 +220,7 @@ class HX711:
 
         :param int average_count: Number of reads to perform for average. Defaults to :const:`1`."""
         if average_count > 1:
-            read_raw = (self.read_average() - self.offset) / self.scalar
+            read_raw = (self.read_average(average_count) - self.offset) / self.scalar
         else:
             read_raw = (self.read_raw() - self.offset) / self.scalar
 
